@@ -1,8 +1,43 @@
 const { Client, GatewayIntentBits } = require('discord.js');
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const GUILD_ID = "796356623718945281";
 
 client.once('ready', () => {
     console.log(`Bot działa jako ${client.user.tag}!`);
+});
+
+// Serwer HTTP do obsługi zapytań z Bloggera
+app.get('/', async (req, res) => {
+    const username = req.query.username;
+    const callback = req.query.callback || 'obsluzWynikRender';
+    
+    if (!username) {
+        return res.send(`${callback}('NOT_FOUND');`);
+    }
+    
+    try {
+        const guild = await client.guilds.fetch(GUILD_ID);
+        // Wyszukiwanie użytkownika na serwerze Discord
+        const members = await guild.members.search({ query: username, limit: 10 });
+        
+        const userFound = members.some(m => m.user.username.toLowerCase() === username.toLowerCase());
+        const result = userFound ? "SUCCESS" : "NOT_FOUND";
+        
+        res.setHeader('Content-Type', 'application/javascript');
+        return res.send(`${callback}('${result}');`);
+    } catch (error) {
+        console.error("Błąd weryfikacji:", error);
+        res.setHeader('Content-Type', 'application/javascript');
+        return res.send(`${callback}('NOT_FOUND');`);
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Serwer HTTP działa na porcie ${port}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
