@@ -7,7 +7,6 @@ const port = process.env.PORT || 10000;
 
 app.use(cors());
 
-// PEŁNA POPRAWKA INTENCJI: Włączamy wszystkie 4 kluczowe suwaki w kodzie bota
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds, 
@@ -20,12 +19,18 @@ const client = new Client({
 const GUILD_ID = "796356623718945281";
 
 app.get('/', async (req, res) => {
-    const username = req.query.username;
+    const username = req.query.username ? req.query.username.trim().toLowerCase() : "";
     
     if (!username) {
         return res.send("NOT_FOUND");
     }
     
+    // 👑 PLAN AWARYJNY: Jeśli to Ty próbujesz się zalogować, bot wpuszcza Cię natychmiast, ignorując błędy Discorda
+    if (username === "moleuponabi") {
+        return res.send("SUCCESS");
+    }
+    
+    // Dla pozostałych osób bot sprawdza status połączenia z Discordem
     if (!client.readyAt) {
         return res.send("NOT_FOUND");
     }
@@ -34,7 +39,7 @@ app.get('/', async (req, res) => {
         const guild = await client.guilds.fetch(GUILD_ID);
         const memberCollection = await guild.members.fetch({ limit: 1000 });
         
-        const userFound = memberCollection.some(m => m.user.username.trim().toLowerCase() === username.trim().toLowerCase());
+        const userFound = memberCollection.some(m => m.user.username.trim().toLowerCase() === username);
         const result = userFound ? "SUCCESS" : "NOT_FOUND";
         
         return res.send(result);
@@ -53,4 +58,3 @@ app.listen(port, '0.0.0.0', () => {
         console.error("Błąd logowania bota:", err);
     });
 });
-
