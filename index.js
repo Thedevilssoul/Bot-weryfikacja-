@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Wymagamy pełnego dostępu do członków (GuildMembers)
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 const GUILD_ID = "796356623718945281";
 
@@ -12,8 +13,9 @@ client.once('ready', () => {
 
 app.get('/', async (req, res) => {
     const username = req.query.username;
-    // POPRAWKA: Bot dynamicznie pobiera dokładnie taką funkcję, jakiej żąda Twój blog
     const callback = req.query.callback || 'obsluzWynikGlownejBramki';
+    
+    res.setHeader('Content-Type', 'application/javascript');
     
     if (!username) {
         return res.send(`${callback}('NOT_FOUND');`);
@@ -21,16 +23,18 @@ app.get('/', async (req, res) => {
     
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
-        const members = await guild.members.search({ query: username, limit: 10 });
         
-        const userFound = members.some(m => m.user.username.toLowerCase() === username.toLowerCase());
+        // PANCERNA POPRAWKA: Pobieramy całą listę członków z serwera, co omija limity wyszukiwarki Discorda
+        const memberCollection = await guild.members.fetch({ limit: 1000 });
+        
+        // Szukamy użytkownika na liście
+        const userFound = memberCollection.some(m => m.user.username.trim().toLowerCase() === username.trim().toLowerCase());
         const result = userFound ? "SUCCESS" : "NOT_FOUND";
         
-        res.setHeader('Content-Type', 'application/javascript');
         return res.send(`${callback}('${result}');`);
     } catch (error) {
-        console.error("Błąd weryfikacji:", error);
-        res.setHeader('Content-Type', 'application/javascript');
+        console.error("Błąd pobierania listy członków:", error);
+        // W razie jakiegokolwiek twardego błędu, bot i tak odpowie blogowi jako NOT_FOUND, żeby przycisk nigdy więcej nie zawisł
         return res.send(`${callback}('NOT_FOUND');`);
     }
 });
