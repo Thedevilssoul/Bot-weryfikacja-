@@ -10,10 +10,10 @@ client.once('ready', () => {
     console.log(`Bot działa jako ${client.user.tag}!`);
 });
 
-// Serwer HTTP do obsługi zapytań z Bloggera
 app.get('/', async (req, res) => {
     const username = req.query.username;
-    const callback = req.query.callback || 'obsluzWynikRender';
+    // POPRAWKA: Bot dynamicznie pobiera dokładnie taką funkcję, jakiej żąda Twój blog
+    const callback = req.query.callback || 'obsluzWynikGlownejBramki';
     
     if (!username) {
         return res.send(`${callback}('NOT_FOUND');`);
@@ -21,7 +21,6 @@ app.get('/', async (req, res) => {
     
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
-        // Wyszukiwanie użytkownika na serwerze Discord
         const members = await guild.members.search({ query: username, limit: 10 });
         
         const userFound = members.some(m => m.user.username.toLowerCase() === username.toLowerCase());
