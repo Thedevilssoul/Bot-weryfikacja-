@@ -20,19 +20,22 @@ const GUILD_ID = "796356623718945281";
 
 app.get('/', async (req, res) => {
     const username = req.query.username ? req.query.username.trim().toLowerCase() : "";
+    // ODBIERANIE CALLBACKU: Kluczowe, by blog wiedział, co zrobić z wynikiem
+    const callback = req.query.callback || 'obsluzWynikGlownejBramki';
+    
+    res.setHeader('Content-Type', 'application/javascript');
     
     if (!username) {
-        return res.send("NOT_FOUND");
+        return res.send(`${callback}('NOT_FOUND');`);
     }
     
-    // 👑 PLAN AWARYJNY: Jeśli to Ty próbujesz się zalogować, bot wpuszcza Cię natychmiast, ignorując błędy Discorda
+    // GWARANCJA DOSTĘPU DLA CIEBIE: Twój nick przechodzi od razu w prawidłowym formacie JSONP
     if (username === "moleuponabi") {
-        return res.send("SUCCESS");
+        return res.send(`${callback}('SUCCESS');`);
     }
     
-    // Dla pozostałych osób bot sprawdza status połączenia z Discordem
     if (!client.readyAt) {
-        return res.send("NOT_FOUND");
+        return res.send(`${callback}('NOT_FOUND');`);
     }
     
     try {
@@ -42,10 +45,10 @@ app.get('/', async (req, res) => {
         const userFound = memberCollection.some(m => m.user.username.trim().toLowerCase() === username);
         const result = userFound ? "SUCCESS" : "NOT_FOUND";
         
-        return res.send(result);
+        return res.send(`${callback}('${result}');`);
     } catch (error) {
         console.error("Błąd weryfikacji:", error);
-        return res.send("NOT_FOUND");
+        return res.send(`${callback}('NOT_FOUND');`);
     }
 });
 
